@@ -6,11 +6,8 @@ from tkinter import filedialog, messagebox
 from docxtpl import DocxTemplate
 from jinja2 import Environment, FileSystemLoader
 
-# ==========================================
-# LÓGICA DE PROCESSAMENTO E INTEGRAÇÃO S.O.
-# ==========================================
+
 def processar_documentos():
-    # 1. Coleta do Payload (Dados da GUI)
     dados = {
         'nome_discente': entry_nome.get().strip(),
         'data_hora': entry_data.get().strip(),
@@ -46,13 +43,9 @@ def processar_documentos():
     pasta_comprovacao = os.path.join(pasta_base, "Comprovacao", identificador)
 
     try:
-        # Cria as pastas usando os caminhos absolutos
         os.makedirs(pasta_liberacao, exist_ok=True)
         os.makedirs(pasta_comprovacao, exist_ok=True)
-
-        # ==========================================
-        # 3. Processamento do Word (.DOCX) e PDF
-        # ==========================================
+ 
         templates_docx = [
             {"template": "declaracao11.docx", "prefixo_saida": "Declaracao1"},
             {"template": "declaracao22.docx", "prefixo_saida": "Declaracao2"},
@@ -65,17 +58,13 @@ def processar_documentos():
             caminho_docx_template = os.path.join(DIR_ATUAL, "Templates", t["template"])
             
             if os.path.exists(caminho_docx_template):
-                # O Python lê o template e injeta os dados
                 doc = DocxTemplate(caminho_docx_template)
                 doc.render(dados)
                 
-                # Salva no caminho absoluto
                 nome_saida_docx = f"{t['prefixo_saida']}_{identificador}.docx"
                 caminho_docx_saida = os.path.join(pasta_liberacao, nome_saida_docx)
                 doc.save(caminho_docx_saida)
 
-                # System Call no Linux: Usando 'soffice' com flags de isolamento
-                # As flags evitam conflitos com processos daemon do LibreOffice já abertos
                 # subprocess.run([
                 #     "soffice", "--headless", "--invisible", "--nologo", "--nodefault", "--nofirststartwizard",
                 #     "--convert-to", "pdf",
@@ -88,20 +77,17 @@ def processar_documentos():
                         caminho_docx_saida, "--outdir", pasta_liberacao
                     ], capture_output=True, text=True, check=True)
                 except subprocess.CalledProcessError as e:
-                    # Isso vai te mostrar exatamente o que o LibreOffice respondeu
+                    
                     erro_detalhado = f"Erro no LibreOffice: {e.stderr}"
-                    print(erro_detalhado) # Aparece no terminal
-                    raise Exception(erro_detalhado) # Interrompe e mostra na GUI
+                    print(erro_detalhado) 
+                    raise Exception(erro_detalhado)
                 
-                # Limpeza do DOCX
+               
                 if os.path.exists(caminho_docx_saida):
                     os.remove(caminho_docx_saida)
             else:
                 raise FileNotFoundError(f"Template não encontrado em: {caminho_docx_template}")
 
-        # ==========================================
-        # 4. Processamento do HTML
-        # ==========================================
         caminho_pasta_templates = os.path.join(DIR_ATUAL, "Templates")
         if os.path.exists(os.path.join(caminho_pasta_templates, "chamada.html")):
             env = Environment(loader=FileSystemLoader(caminho_pasta_templates))
@@ -115,16 +101,11 @@ def processar_documentos():
         else:
             print("Template HTML não encontrado.")
 
-        # ==========================================
-        # 5. Cópia de Anexos
-        # ==========================================
+
         if caminho_anexo and caminho_anexo != "Nenhum arquivo selecionado":
             nome_arquivo = os.path.basename(caminho_anexo)
             shutil.copy2(caminho_anexo, os.path.join(pasta_comprovacao, nome_arquivo))
 
-        # ==========================================
-        # 6. Feedback Final
-        # ==========================================
         subprocess.Popen(['xdg-open', pasta_base])
         messagebox.showinfo("Sucesso", "Documentos (PDF e HTML) gerados!")
         limpar_formulario()
@@ -132,9 +113,6 @@ def processar_documentos():
     except Exception as e:
         messagebox.showerror("Erro Crítico", f"Falha no sistema de arquivos ou conversão:\n{str(e)}")
 
-# ==========================================
-# INTERFACE GRÁFICA (GUI)
-# ==========================================
 def selecionar_arquivo():
     caminho = filedialog.askopenfilename()
     if caminho:
