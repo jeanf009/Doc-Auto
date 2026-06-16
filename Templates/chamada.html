@@ -1,0 +1,42 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chamada para Defesa</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2>Defesa de Dissertação de {{ especializacao }}</h2>
+    <p>Aluno(a): <strong>{{ nome_discente }}</strong> (Orientador(a): {{ nome_orientador }}).</p>
+    <p><strong>Título do Trabalho:</strong> {{ titulo_trabalho }}</p>
+    <p><strong>Data:</strong> {{ data_defesa }}</p>
+    <p><strong>Local:</strong> {{ local_defesa }}</p>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<div class="defesa-artigo" style="max-width: 800px; margin: 40px auto; padding: 30px; background-color: #fdfdfd; border: 1px solid #ccc; border-radius: 8px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+    
+    <h1 style="font-size: 24px; color: #333333 !important; text-align: center;"><strong>DEFESA DE DISSERTAÇÃO DE {{especializacao| upper}} Nº {{numero_defesa}}</strong></h1>
+    
+    <h1 style="color: #333;"><strong>Discente: {{nome_discente}}</strong></h1>
+    <h1 style="color: #333;"><strong>Título: "{{titulo_trabalho}}"</strong> </h1>
+    <h2><strong>Orientador(a): </strong>{{nome_orientador}}</h2>
+    <h2><strong>Coorientador(a): </strong>{{nome_coorientador}}</h2>
+    <h2><strong>Examinador(a) Externo(a): </strong>{{examinadores_externos}}</h2>
+    <h2><strong>Examinador(a) Interno(a): </strong>{{examinadores_internos}}</h2>
+    <h2><strong>Data-hora: </strong>{{data_hora}}</h2>
+    <h2><strong>Local: </strong>{{local_defesa}}</h2>
+    <br />
+    <hr />
+    <h2><strong>Resumo:</strong></h2>
+    <p>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        "
+        {{resumo_trabalho}}
+        "
+    </p>
+
+    <!-- <img src="https://i.ibb.co/chmjkZhW/C-pia-de-Defesa-MSC-322.png" alt="Defesa MSC 322" style="max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #ccc;" /> -->
+
+</div>
+</html>
