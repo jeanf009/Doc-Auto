@@ -7,11 +7,19 @@ from tkinter import filedialog, messagebox
 from docxtpl import DocxTemplate
 from jinja2 import Environment, FileSystemLoader
 
+arquivos_selecionados = []
+
 def processar_documentos():
+    global arquivos_selecionados
+
+    texto_data_hora = entry_data.get().strip()
+    data = texto_data_hora.split(',')[0].strip() if ',' in texto_data_hora else texto_data_hora.split()[0].strip()
+
     dados = {
         'nome_discente': entry_nome.get().strip(),
-        'data_hora': entry_data.get().strip(),
-        'local_defesa': entry_local.get().strip(),
+        'data_hora': texto_data_hora,
+        'data': data,
+        'local_defesa': entry_local.get().strip() if chk_var_remoto.get() == 0 else "",
         'titulo_trabalho': entry_titulo.get().strip(),
         'especializacao': entry_especializacao.get().strip(),
         'area_trabalho': entry_area.get().strip(),
@@ -24,7 +32,6 @@ def processar_documentos():
         'formato_remoto': bool(chk_var_remoto.get()),
         'link_defesa': entry_link.get().strip() if chk_var_remoto.get() == 1 else ""
     }
-    caminho_anexo = lbl_caminho_anexo.cget("text")
 
     if not dados['nome_discente']:
         messagebox.showwarning("Aviso", "Preencha Nome do Discente.")
@@ -53,7 +60,8 @@ def processar_documentos():
             {"template": "doc_orientador.docx", "prefixo_saida": "Declaração_Orientador", "gerar": True},
             {"template": "doc_banca.docx", "prefixo_saida": "Declaração_Banca_Examinadora", "gerar": True},
             {"template": "doc_convocacao.docx", "prefixo_saida": "Resolução_Banca_Examinadora", "gerar": True},
-            {"template": "doc_coorientador.docx", "prefixo_saida": "Declaração_Coorientador", "gerar": bool(dados['nome_coorientador'])},
+            {"template": "doc_coorientador.docx", "prefixo_saida": "Declaração_Coorientador",
+                                                                                 "gerar": bool(dados['nome_coorientador'])},
         ]
         
         for t in templates_docx:
@@ -67,13 +75,14 @@ def processar_documentos():
                 doc.render(dados)
                 
                 nome_saida_docx = f"{t['prefixo_saida']}_{identificador}.docx"
-                caminho_docx_saida = os.path.join(pasta_liberacao, nome_saida_docx)
+                caminho_docx_saida = os.path.join(pasta_comprovacao, nome_saida_docx)
                 doc.save(caminho_docx_saida)
 
             else:
                 print(f"Aviso: Template não encontrado: {t['template']}")
 
         caminho_pasta_templates = os.path.join(DIR_ATUAL, "Templates")
+        
         if os.path.exists(os.path.join(caminho_pasta_templates, "chamada.html")):
             env = Environment(loader=FileSystemLoader(caminho_pasta_templates))
             template_html = env.get_template("chamada.html")
@@ -86,9 +95,10 @@ def processar_documentos():
         else:
             print("Template HTML não encontrado.")
 
-        if caminho_anexo and caminho_anexo != "Nenhum arquivo selecionado":
-            nome_arquivo = os.path.basename(caminho_anexo)
-            shutil.copy2(caminho_anexo, os.path.join(pasta_comprovacao, nome_arquivo))
+        if arquivos_selecionados:
+            for caminho in arquivos_selecionados:
+                nome_arquivo = os.path.basename(caminho)
+                shutil.copy2(caminho, os.path.join(pasta_liberacao, nome_arquivo))
 
         sistema = platform.system()
         if sistema == "Windows":
@@ -106,11 +116,25 @@ def processar_documentos():
 
 
 def selecionar_arquivo():
-    caminho = filedialog.askopenfilename()
-    if caminho:
-        lbl_caminho_anexo.config(text=caminho)
+    global arquivos_selecionados
+
+    caminhos = filedialog.askopenfilenames(filetypes=[("Todos os Arquivos", "*.*")])
+
+    if caminhos:
+        arquivos_selecionados.extend(caminhos)
+        arquivos_selecionados = list(set(arquivos_selecionados))
+
+        qtd = len(arquivos_selecionados)
+
+        lbl_caminho_anexo.config(text=f"{qtd} arquivo(s) selecionado(s)")
 
 def limpar_formulario():
+    global arquivos_selecionados
+
+    entry_coorientador.config(state="normal")
+    entry_local.config(state="normal")
+    entry_link.config(state="normal")
+
     for entry in entradas_simples:
         entry.delete(0, tk.END)
     
@@ -120,6 +144,7 @@ def limpar_formulario():
     chk_var_remoto.set(0)
     toggle_coorientador()
 
+    arquivos_selecionados = []
     lbl_caminho_anexo.config(text="Nenhum arquivo selecionado")
 
 def toggle_coorientador():
@@ -134,10 +159,16 @@ def toggle_coorientador():
 def toggle_link_remoto():
     if chk_var_remoto.get() == 1:
         entry_link.config(state="normal")
+        entry_local.delete(0, tk.END)
+        entry_local.config(state="disabled")
+
     else:
         entry_link.config(state="normal")
         entry_link.delete(0, tk.END)
         entry_link.config(state="disabled")
+
+        entry_local.config(state="normal")
+
 
 root = tk.Tk()
 root.title("GUI - Automatização de Documentos")
@@ -154,7 +185,7 @@ font_label = ("Arial", 10, "bold")
 campos_iniciais = [
     ("Nome do Discente:", "entry_nome"),
     ("Data-Hora da Defesa:", "entry_data"),
-    ("Local Defesa:", "entry_local"),
+    ("Local Defesa (Presencial):", "entry_local"),
     ("Título do Trabalho:", "entry_titulo"),
     ("Especialização:", "entry_especializacao"),
     ("Área do Trabalho:", "entry_area"),
@@ -238,7 +269,7 @@ entry_resumo.pack(anchor="w", padx=5, pady=(2, 5))
 frame_rodape = tk.Frame(root)
 frame_rodape.pack(fill="x", padx=20, pady=(5, 15))
 
-tk.Label(frame_rodape, text="Anexos de Comprovação (Opcional):", font=font_label).pack(anchor="w")
+tk.Label(frame_rodape, text="Anexos de Material (Opcional):", font=font_label).pack(anchor="w")
 
 btn_anexo = tk.Button(frame_rodape, text="Procurar...", command=selecionar_arquivo, width=15)
 btn_anexo.pack(side="left", pady=5)
@@ -248,7 +279,7 @@ lbl_caminho_anexo.pack(side="left", padx=15, pady=5)
 
 btn_gerar = tk.Button(
     root, 
-    text="Gerar Documentos", 
+    text="Gerar Textos dos Documentos", 
     font=("Arial", 12, "bold"), 
     bg="#2a82da", 
     fg="white",
