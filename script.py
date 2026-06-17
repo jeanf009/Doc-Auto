@@ -20,7 +20,9 @@ def processar_documentos():
         'examinadores_internos': entry_internos.get().strip(),
         'examinadores_externos': entry_externos.get().strip(),
         'numero_defesa': entry_numero.get().strip(),
-        'resumo_trabalho': entry_resumo.get("1.0", tk.END).strip()
+        'resumo_trabalho': entry_resumo.get("1.0", tk.END).strip(),
+        'formato_remoto': bool(chk_var_remoto.get()),
+        'link_defesa': entry_link.get().strip() if chk_var_remoto.get() == 1 else ""
     }
     caminho_anexo = lbl_caminho_anexo.cget("text")
 
@@ -115,6 +117,7 @@ def limpar_formulario():
     entry_resumo.delete("1.0", tk.END)
 
     chk_var_coorientador.set(0)
+    chk_var_remoto.set(0)
     toggle_coorientador()
 
     lbl_caminho_anexo.config(text="Nenhum arquivo selecionado")
@@ -127,6 +130,14 @@ def toggle_coorientador():
         entry_coorientador.config(state="normal")
         entry_coorientador.delete(0, tk.END)
         entry_coorientador.config(state="disabled")
+
+def toggle_link_remoto():
+    if chk_var_remoto.get() == 1:
+        entry_link.config(state="normal")
+    else:
+        entry_link.config(state="normal")
+        entry_link.delete(0, tk.END)
+        entry_link.config(state="disabled")
 
 root = tk.Tk()
 root.title("GUI - Automatização de Documentos")
@@ -168,6 +179,7 @@ entry_especializacao = entradas_dict["entry_especializacao"]
 entry_area = entradas_dict["entry_area"]
 entry_orientador = entradas_dict["entry_orientador"]
 
+
 frame_coor = tk.Frame(main_frame)
 frame_coor.pack(fill="x", pady=(6, 2))
 
@@ -201,6 +213,23 @@ entry_internos = entradas_dict["entry_internos"]
 entry_externos = entradas_dict["entry_externos"]
 entry_numero = entradas_dict["entry_numero"]
 
+frame_formato = tk.Frame(main_frame)
+frame_formato.pack(fill="x", pady=(2, 4))
+
+chk_var_remoto = tk.IntVar(value=0)
+chk_remoto = tk.Checkbutton(
+    frame_formato, 
+    text="Defesa em Formato Remoto (Online)",
+    command=toggle_link_remoto, 
+    variable=chk_var_remoto,
+    font=font_label
+)
+
+chk_remoto.pack(anchor="w", padx=5)
+
+tk.Label(frame_formato, text="Link da Defesa (Teams, Meet, Zoom):", font=("Arial", 9, "italic")).pack(anchor="w", padx=5)
+entry_link = tk.Entry(frame_formato, width=100, state="disabled")
+entry_link.pack(anchor="w", padx=5)
 
 tk.Label(main_frame, text="Resumo:", font=font_label).pack(anchor="w", pady=(4, 0))
 entry_resumo = tk.Text(main_frame, width=75, height=4, font=("Arial", 10))

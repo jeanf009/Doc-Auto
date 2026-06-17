@@ -1,0 +1,11 @@
+# Ignore the Python virtual environment folder
+venv/
+.venv/
+env/
+
+# Ignore the output files created by your script
+Saida/
+
+# Ignore temporary Word or Office files (if they accidentally get left behind)
+~$*.docx
+*.tmp

@@ -15,7 +15,10 @@
     <h2><strong>Examinador(a) Externo(a): </strong>{{examinadores_externos}}</h2>
     <h2><strong>Examinador(a) Interno(a): </strong>{{examinadores_internos}}</h2>
     <h2><strong>Data-hora: </strong>{{data_hora}}</h2>
-    <h2><strong>Local: </strong>{{local_defesa}}</h2>
+    <h2><strong>Local: </strong>{% if formato_remoto %}Formato Remoto -{% else %}Formato Presencial -{% endif %} {{local_defesa}}</h2>
+    {% if formato_remoto and link_defesa %}
+    <h2><strong>Link: </strong><a href="{{link_defesa}}" target="_blank">{{link_defesa}}</a></h2>
+    {% endif %}
     <br />
     <hr />
     <h2><strong>Resumo:</strong></h2>
