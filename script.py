@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import platform
 import subprocess
@@ -9,15 +10,87 @@ from jinja2 import Environment, FileSystemLoader
 
 arquivos_selecionados = []
 
+MESES_EXTENSO = {
+    1: "janeiro", 2: "fevereiro", 3: "março", 4: "abril", 5: "maio", 6: "junho",
+    7: "julho", 8: "agosto", 9: "setembro", 10: "outubro", 11: "novembro", 12: "dezembro"
+}
+
+# Dicionário estendido para converter o nome do mês em número se necessário
+MESES_NOME_PARA_NUM = {v: k for k, v in MESES_EXTENSO.items()}
+
+NUMEROS_EXTENSO = {
+    1: "um", 2: "dois", 3: "três", 4: "quatro", 5: "cinco", 6: "seis", 7: "sete", 8: "oito", 9: "nove", 10: "dez",
+    11: "onze", 12: "doze", 13: "treze", 14: "catorze", 15: "quinze", 16: "dezesseis", 17: "dezessete", 18: "dezoito",
+    19: "dezenove", 20: "vinte", 21: "vinte e um", 22: "vinte e dois", 23: "vinte e três", 24: "vinte e quatro",
+    25: "vinte e cinco", 26: "vinte e seis", 27: "vinte e sete", 28: "vinte e oito", 29: "vinte e nove", 30: "trinta", 31: "trinta e um"
+}
+
+def converter_entrada_livre_extenso(texto_data):
+    texto_limpo = texto_data.lower()
+    
+    busca_dia = re.search(r'\b(\d{1,2})\b', texto_limpo)
+    dia = int(busca_dia.group(1)) if busca_dia else 1
+    
+    mes = 6
+    for nome_mes, num_mes in MESES_NOME_PARA_NUM.items():
+        if nome_mes in texto_limpo:
+            mes = num_mes
+            break
+    else:
+        busca_mes_num = re.search(r'[/.-](\d{1,2})[/.-]', texto_limpo)
+        if busca_mes_num:
+            mes = int(busca_mes_num.group(1))
+
+    busca_ano = re.search(r'\b(\d{4})\b', texto_limpo)
+    ano = int(busca_ano.group(1)) if busca_ano else 2026
+
+    busca_hora = re.search(r'(?:às\s+|h\s*|:\s*)(\d{1,2})', texto_limpo)
+    if not busca_hora:
+        busca_hora = re.search(r'\b(\d{1,2})h', texto_limpo)
+    
+    hora = int(busca_hora.group(1)) if busca_hora else 14
+    
+    busca_minutos = re.search(r'(?::|h)(\d{2})\b', texto_limpo)
+    minuto = int(busca_minutos.group(1)) if busca_minutos else 0
+
+    dia_txt = "primeiro" if dia == 1 else NUMEROS_EXTENSO.get(dia, str(dia))
+    mes_txt = MESES_EXTENSO.get(mes, "março")
+    
+    anos_dict = {2024: "dois mil e vinte e quatro", 2025: "dois mil e vinte e cinco", 2026: "dois mil e vinte e seis", 2027: "dois mil e vinte e sete"}
+    ano_txt = anos_dict.get(ano, str(ano))
+    
+    horas_txt = NUMEROS_EXTENSO.get(hora, str(hora))
+    minutos_txt = "" if minuto == 0 else f" e {NUMEROS_EXTENSO.get(minuto, str(minuto))}"
+    
+    data_extenso = f"{dia_txt} do mês de {mes_txt} do ano {ano_txt}"
+    hora_extenso = f"{horas_txt} horas{minutos_txt}"
+    data_curta = f"{dia} de {mes_txt} de {ano}"
+    
+    return data_extenso, hora_extenso, data_curta
+
 def processar_documentos():
     global arquivos_selecionados
 
     texto_data_hora = entry_data.get().strip()
+    data_extenso, hora_extenso, data_curta = converter_entrada_livre_extenso(texto_data_hora)
     data = texto_data_hora.split(',')[0].strip() if ',' in texto_data_hora else texto_data_hora.split()[0].strip()
+
+    link = entry_link.get().strip()
+    plataforma = "plataforma online"
+    if "meet.google" in link.lower():
+        plataforma = "Google Meet"
+    elif "teams" in link.lower():
+        plataforma = "Microsoft Teams"
+    elif "zoom" in link.lower():
+        plataforma = "Zoom"
 
     dados = {
         'nome_discente': entry_nome.get().strip(),
         'data_hora': texto_data_hora,
+        'data_extenso': data_extenso,      
+        'hora_extenso': hora_extenso,      
+        'data_curta': data_curta,          
+        'plataforma_remota': plataforma,   
         'data': data,
         'local_defesa': entry_local.get().strip() if chk_var_remoto.get() == 0 else "",
         'titulo_trabalho': entry_titulo.get().strip(),
@@ -30,7 +103,7 @@ def processar_documentos():
         'numero_defesa': entry_numero.get().strip(),
         'resumo_trabalho': entry_resumo.get("1.0", tk.END).strip(),
         'formato_remoto': bool(chk_var_remoto.get()),
-        'link_defesa': entry_link.get().strip() if chk_var_remoto.get() == 1 else ""
+        'link_defesa': link
     }
 
     if not dados['nome_discente']:
@@ -60,8 +133,10 @@ def processar_documentos():
             {"template": "doc_orientador.docx", "prefixo_saida": "Declaração_Orientador", "gerar": True},
             {"template": "doc_banca.docx", "prefixo_saida": "Declaração_Banca_Examinadora", "gerar": True},
             {"template": "doc_convocacao.docx", "prefixo_saida": "Resolução_Banca_Examinadora", "gerar": True},
+            {"template": "doc_ata.docx", "prefixo_saida": "Ata_de_Defesa", "gerar": True},
             {"template": "doc_coorientador.docx", "prefixo_saida": "Declaração_Coorientador",
                                                                                  "gerar": bool(dados['nome_coorientador'])},
+                                
         ]
         
         for t in templates_docx:
@@ -75,7 +150,11 @@ def processar_documentos():
                 doc.render(dados)
                 
                 nome_saida_docx = f"{t['prefixo_saida']}_{identificador}.docx"
-                caminho_docx_saida = os.path.join(pasta_comprovacao, nome_saida_docx)
+                if t["template"] == "doc_ata.docx":
+                    caminho_docx_saida = os.path.join(pasta_liberacao, nome_saida_docx)
+                else:
+                    caminho_docx_saida = os.path.join(pasta_comprovacao, nome_saida_docx)
+                    
                 doc.save(caminho_docx_saida)
 
             else:
